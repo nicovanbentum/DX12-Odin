@@ -1,0 +1,483 @@
+[
+	{
+		"m_name": "Clear Buffer Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Clear Texture Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Sky Cube Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Convolve Cube Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "ImGui Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Grass Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "GBuffer Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Skinning Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Lighting Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Light Cull Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Downsample Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "TAA  Resolve Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Final Compose Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Debug Primitives Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Probe Debug Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Probe Debug Rays Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Probe Trace Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Probe Sample Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Probe Update Depth Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Probe Update Irradiance Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "RT Reflections Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "RT Path Trace Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "RT Ambient Occlusion Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Trace Shadow Rays Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Clear Shadow Tiles Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Classify Shadow Tiles Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Denoise Shadow Tiles Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "GBuffer Debug Depth Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "GBuffer Debug Albedo Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "GBuffer Debug Normals Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "GBuffer Debug Emissive Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "GBuffer Debug Metallic Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "GBuffer Debug Roughness Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "GBuffer Debug Velocity Shader",
+		"m_kind": 1,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Bloom Upscale Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Bloom Downscale Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	},
+	{
+		"m_name": "Depth of Field Shader",
+		"m_kind": 2,
+		"m_vertex_shader_blob": [
+
+		],
+		"m_pixel_shader_blob": [
+
+		],
+		"m_compute_shader_blob": [
+
+		]
+	}
+]

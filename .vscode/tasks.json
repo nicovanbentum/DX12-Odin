@@ -1,0 +1,42 @@
+{
+    "version": "2.0.0",
+    "command": "",
+    "args": [],
+    "tasks": [
+        {
+            "label": "mkdir",
+            "type": "shell",
+            "command": "cmd",
+            "args": [
+                "/C",
+                "if not exist .\\build mkdir .\\build"
+            ]
+        },
+        {
+            "label": "build-debug",
+            "type": "shell",
+            "command": "odin build ./code -debug -out:build/RK-Odin.exe",
+            "group": "build"
+        },
+        {
+            "label": "build-release",
+            "type": "shell",
+            "command": "odin build ./code -out:build/RK-Odin.exe",
+            "group": "build"
+        },
+        {
+            "label": "BuildDebug",
+            "dependsOn": [
+                "mkdir",
+                "build-debug"
+            ]
+        },
+        {
+            "label": "BuildRelease",
+            "dependsOn": [
+                "mkdir",
+                "build-release"
+            ]
+        }
+    ]
+}

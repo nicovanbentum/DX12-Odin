@@ -1,0 +1,176 @@
+[
+	{
+        "m_name": "Clear Buffer Shader",
+        "m_compute_shader_file": "assets/system/shaders/ClearBufferUAV.hlsl"
+	},
+	{
+        "m_name": "Clear Texture Shader",
+        "m_compute_shader_file": "assets/system/shaders/ClearTextureUAV.hlsl"
+	},
+	{
+        "m_name": "Sky Cube Shader",
+        "m_compute_shader_file": "assets/system/shaders/SkyCubeCS.hlsl"
+	},
+	{
+        "m_name": "Convolve Cube Shader",
+        "m_compute_shader_file": "assets/system/shaders/ConvolveCubeCS.hlsl"
+	},
+	{
+        "m_name": "ImGui Shader",
+        "m_vertex_shader_file": "assets/system/shaders/ImGuiVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/ImGuiPS.hlsl"
+	},
+	{
+        "m_name": "Grass Shader",
+        "m_vertex_shader_file": "assets/system/shaders/GrassRenderVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/GrassRenderPS.hlsl"
+	},
+	{
+        "m_name": "GBuffer Shader",
+        "m_vertex_shader_file": "assets/system/shaders/GBufferVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/GBufferPS.hlsl"
+	},
+	{
+        "m_name": "Skinning Shader",
+        "m_compute_shader_file": "assets/system/shaders/SkinningCS.hlsl"
+	},
+	{
+        "m_name": "Lighting Shader",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/LightingPS.hlsl"
+	},
+	{
+        "m_name": "Light Cull Shader",
+        "m_compute_shader_file": "assets/system/shaders/LightCullTiledCS.hlsl"
+	},
+	{
+        "m_name": "Downsample Shader",
+        "m_compute_shader_file": "assets/system/shaders/DownsampleCS.hlsl"
+	},
+	{
+        "m_name": "TAA  Resolve Shader",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/TAAResolvePS.hlsl"
+	},
+	{
+        "m_name": "Final Compose Shader",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/FinalComposePS.hlsl"
+	},
+	{
+        "m_name": "Debug Primitives Shader",
+        "m_vertex_shader_file": "assets/system/shaders/DebugLinesVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/DebugLinesPS.hlsl"
+	},
+	{
+        "m_name": "Probe Debug Shader",
+        "m_vertex_shader_file": "assets/system/shaders/ProbeDebugVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/ProbeDebugPS.hlsl"
+	},
+	{
+        "m_name": "Probe Debug Rays Shader",
+        "Defines": "#define DEBUG_PROBE_RAYS",
+        "m_vertex_shader_file": "assets/system/shaders/DebugLinesVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/DebugLinesPS.hlsl"
+	},
+	{
+        "m_name": "Probe Trace Shader",
+        "m_compute_shader_file": "assets/system/shaders/ProbeTraceCS.hlsl"
+	},
+	{
+        "m_name": "Probe Sample Shader",
+        "m_compute_shader_file": "assets/system/shaders/ProbeSampleCS.hlsl"
+	},
+	{
+        "m_name": "Probe Update Depth Shader",
+        "m_compute_shader_file": "assets/system/shaders/ProbeUpdateDepthCS.hlsl"
+	},
+	{
+        "m_name": "Probe Update Irradiance Shader",
+        "m_compute_shader_file": "assets/system/shaders/ProbeUpdateIrradianceCS.hlsl"
+	},
+	{
+        "m_name": "RT Reflections Shader",
+        "m_compute_shader_file": "assets/system/shaders/RTReflectionsCS.hlsl"
+	},
+	{
+        "m_name": "RT Path Trace Shader",
+        "m_compute_shader_file": "assets/system/shaders/PathTraceCS.hlsl"
+	},
+	{
+        "m_name": "RT Ambient Occlusion Shader",
+        "m_compute_shader_file": "assets/system/shaders/RTAmbientOcclusionCS.hlsl"
+	},
+	{
+        "m_name": "Trace Shadow Rays Shader",
+        "m_compute_shader_file": "assets/system/shaders/RTShadowsTraceCS.hlsl"
+	},
+	{
+        "m_name": "Clear Shadow Tiles Shader",
+        "m_compute_shader_file": "assets/system/shaders/RTShadowsClearTilesCS.hlsl"
+	},
+	{
+        "m_name": "Classify Shadow Tiles Shader",
+        "m_compute_shader_file": "assets/system/shaders/RTShadowsClassifyCS.hlsl"
+	},
+	{
+        "m_name": "Denoise Shadow Tiles Shader",
+        "m_compute_shader_file": "assets/system/shaders/RTShadowsDenoiseCS.hlsl"
+	},
+	{
+        "m_name": "GBuffer Debug Depth Shader",
+        "Defines": "#define DEBUG_TEXTURE_GBUFFER_DEPTH",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreenTriangleVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
+	},
+	{
+        "m_name": "GBuffer Debug Albedo Shader",
+        "Defines": "#define DEBUG_TEXTURE_GBUFFER_ALBEDO",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
+	},
+	{
+        "m_name": "GBuffer Debug Normals Shader",
+        "Defines": "#define DEBUG_TEXTURE_GBUFFER_NORMALS",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
+	},
+	{
+        "m_name": "GBuffer Debug Emissive Shader",
+        "Defines": "#define DEBUG_TEXTURE_GBUFFER_EMISSIVE",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
+	},
+	{
+        "m_name": "GBuffer Debug Metallic Shader",
+        "Defines": "#define DEBUG_TEXTURE_GBUFFER_METALLIC",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
+	},
+	{
+        "m_name": "GBuffer Debug Roughness Shader",
+        "Defines": "#define DEBUG_TEXTURE_GBUFFER_ROUGHNESS",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
+	},
+	{
+        "m_name": "GBuffer Debug Velocity Shader",
+        "Defines": "#define DEBUG_TEXTURE_GBUFFER_VELOCITY",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
+	},
+	{
+        "m_name": "Bloom Upscale Shader",
+        "Defines": "#define DO_UPSCALE",
+        "m_compute_shader_file": "assets/system/shaders/BloomCS.hlsl"
+	},
+	{
+        "m_name": "Bloom Downscale Shader",
+        "Defines": "#define DO_DOWNSCALE",
+        "m_compute_shader_file": "assets/system/shaders/BloomCS.hlsl"
+	}
+    {
+        "m_name": "Depth of Field Shader",
+        "m_compute_shader_file": "assets/system/shaders/DepthOfFieldCS.hlsl"
+	}
+]

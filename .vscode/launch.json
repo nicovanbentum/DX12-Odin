@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cppvsdbg",
+            "console": "newExternalWindow",
+            "request": "launch",
+            "preLaunchTask": "BuildDebug",
+            "name": "Debug",
+            "program": "${workspaceFolder}/build/RK-Odin.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "cppvsdbg",
+            "console": "newExternalWindow",
+            "request": "launch",
+            "preLaunchTask": "BuildRelease",
+            "name": "Release",
+            "program": "${workspaceFolder}/build/RK-Odin.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
