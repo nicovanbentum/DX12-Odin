@@ -1,11 +1,11 @@
 # DX12 Renderer in Odin
 
-Re-implementation of my renderer in Odin. This version is DX12 only to make it easier to change data formats and experiment with newer rendering techniques.
+Re-implementation of my renderer in [Odin](https://odin-lang.org/). This version is DX12 only to make it easier to change data formats and experiment with newer rendering techniques.
 
 ### Requirements
 
 * Graphics card with RTX support.
-* Odin compiler accessible from PATH.
+* Odin [compiler](https://github.com/odin-lang/Odin/releases) accessible from PATH.
 
 ### Build
 
