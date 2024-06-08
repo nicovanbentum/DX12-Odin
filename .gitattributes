@@ -1,0 +1,3 @@
+code/third_party -linguist-vendored
+assets/system/shaders/include/ffx_a.h linguist-vendored
+assets/system/shaders/include/ffx_spd.h linguist-vendored
