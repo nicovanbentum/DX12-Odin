@@ -1,5 +1,7 @@
 # DX12 Renderer in Odin
 
+![image](https://github.com/nicovanbentum/DX12-Odin/blob/master/assets/preview.png)
+
 Re-implementation of my renderer in [Odin](https://odin-lang.org/). This version is DX12 only to make it easier to change data formats and experiment with newer rendering techniques.
 
 ### Requirements
