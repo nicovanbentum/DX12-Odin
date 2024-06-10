@@ -49,12 +49,12 @@
 	},
 	{
         "m_name": "TAA  Resolve Shader",
-        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreenTriangleVS.hlsl",
         "m_pixel_shader_file": "assets/system/shaders/TAAResolvePS.hlsl"
 	},
 	{
         "m_name": "Final Compose Shader",
-        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreenTriangleVS.hlsl",
         "m_pixel_shader_file": "assets/system/shaders/FinalComposePS.hlsl"
 	},
 	{
@@ -126,37 +126,37 @@
 	{
         "m_name": "GBuffer Debug Albedo Shader",
         "Defines": "#define DEBUG_TEXTURE_GBUFFER_ALBEDO",
-        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreenTriangleVS.hlsl",
         "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
 	},
 	{
         "m_name": "GBuffer Debug Normals Shader",
         "Defines": "#define DEBUG_TEXTURE_GBUFFER_NORMALS",
-        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreenTriangleVS.hlsl",
         "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
 	},
 	{
         "m_name": "GBuffer Debug Emissive Shader",
         "Defines": "#define DEBUG_TEXTURE_GBUFFER_EMISSIVE",
-        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreenTriangleVS.hlsl",
         "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
 	},
 	{
         "m_name": "GBuffer Debug Metallic Shader",
         "Defines": "#define DEBUG_TEXTURE_GBUFFER_METALLIC",
-        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreenTriangleVS.hlsl",
         "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
 	},
 	{
         "m_name": "GBuffer Debug Roughness Shader",
         "Defines": "#define DEBUG_TEXTURE_GBUFFER_ROUGHNESS",
-        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreenTriangleVS.hlsl",
         "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
 	},
 	{
         "m_name": "GBuffer Debug Velocity Shader",
         "Defines": "#define DEBUG_TEXTURE_GBUFFER_VELOCITY",
-        "m_vertex_shader_file": "assets/system/shaders/FullScreennTriangleVS.hlsl",
+        "m_vertex_shader_file": "assets/system/shaders/FullScreenTriangleVS.hlsl",
         "m_pixel_shader_file": "assets/system/shaders/GbufferDebugPS.hlsl"
 	},
 	{

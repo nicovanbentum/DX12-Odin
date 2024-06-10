@@ -204,6 +204,27 @@ gpu_resource_pool_reserve :: proc(using in_pool : ^GPUResourcePool($Resource, $R
     reserve_dynamic_array(&m_storage, in_size)
 }
 
+gpu_buffer_desc_equal :: proc(in_desc1 : GPUBufferDesc, in_desc2 : GPUBufferDesc) -> bool
+{
+    return in_desc1.format == in_desc2.format && 
+            in_desc1.size == in_desc2.size &&
+            in_desc1.stride == in_desc2.stride &&
+            in_desc1.usage == in_desc2.usage &&
+            in_desc1.mapped == in_desc2.mapped &&
+            in_desc1.swizzle == in_desc2.swizzle;
+}
+
+gpu_texture_desc_equal :: proc(in_desc1 : GPUTextureDesc, in_desc2 : GPUTextureDesc) -> bool
+{
+    return in_desc1.format == in_desc2.format && 
+            in_desc1.width == in_desc2.width &&
+            in_desc1.height == in_desc2.height &&
+            in_desc1.usage == in_desc2.usage &&
+            in_desc1.depth_or_layers == in_desc2.depth_or_layers &&
+            in_desc1.base_mip == in_desc2.base_mip &&
+            in_desc1.mips == in_desc2.mips;
+}
+
 gpu_buffer_usage_to_resource_states :: proc(in_usage : GPUBufferUsage) -> d3d12.RESOURCE_STATES
 {
     switch (in_usage)
@@ -212,7 +233,7 @@ gpu_buffer_usage_to_resource_states :: proc(in_usage : GPUBufferUsage) -> d3d12.
         case .VERTEX_BUFFER : return { d3d12.RESOURCE_STATE.VERTEX_AND_CONSTANT_BUFFER }
         case .INDEX_BUFFER : return { d3d12.RESOURCE_STATE.INDEX_BUFFER}
         case .UPLOAD : return d3d12.RESOURCE_STATE_COMMON
-        case .SHADER_READ_ONLY : return d3d12.RESOURCE_STATE_ALL_SHADER_RESOURCE 
+        case .SHADER_READ_ONLY : return { .NON_PIXEL_SHADER_RESOURCE, .PIXEL_SHADER_RESOURCE }
         case .SHADER_READ_WRITE : return { d3d12.RESOURCE_STATE.UNORDERED_ACCESS }
         case .ACCELERATION_STRUCTURE : return { d3d12.RESOURCE_STATE.RAYTRACING_ACCELERATION_STRUCTURE }
         case .INDIRECT_ARGUMENTS : return { d3d12.RESOURCE_STATE.INDIRECT_ARGUMENT }
@@ -229,7 +250,7 @@ gpu_texture_usage_to_resource_states :: proc(in_usage : GPUTextureUsage) -> d3d1
         case .GENERAL : return d3d12.RESOURCE_STATE_COMMON
         case .RENDER_TARGET : return { .RENDER_TARGET }
         case .DEPTH_STENCIL_TARGET : return { .DEPTH_WRITE }
-        case .SHADER_READ_ONLY : return d3d12.RESOURCE_STATE_ALL_SHADER_RESOURCE
+        case .SHADER_READ_ONLY : return { .NON_PIXEL_SHADER_RESOURCE, .PIXEL_SHADER_RESOURCE }
         case .SHADER_READ_WRITE : return { .UNORDERED_ACCESS }
     }
 

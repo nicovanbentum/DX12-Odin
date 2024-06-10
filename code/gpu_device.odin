@@ -76,8 +76,8 @@ gpu_device_init :: proc(using in_device : ^GPUDevice)
         if windows.SUCCEEDED(d3d12.GetDebugInterface(d3d12.IDebug1_UUID, (^rawptr)(&debug_interface)))
         {
             debug_interface->EnableDebugLayer()
-            //debug_interface->SetEnableGPUBasedValidation(true)
-            //debug_interface->SetEnableSynchronizedCommandQueueValidation(true)
+            debug_interface->SetEnableGPUBasedValidation(true)
+            debug_interface->SetEnableSynchronizedCommandQueueValidation(true)
         }
     }
 
@@ -115,17 +115,13 @@ gpu_device_init :: proc(using in_device : ^GPUDevice)
         d3d12.ROOT_PARAMETER1 { ParameterType = .SRV, Descriptor = {ShaderRegister = 1 /* t1 */ } }
     }
 
-    STATIC_SAMPLERS := [?]d3d12.STATIC_SAMPLER_DESC {
-        // TODO
-    }
-
     root_sig_desc := d3d12.VERSIONED_ROOT_SIGNATURE_DESC {
         Version = ._1_1,
         Desc_1_1 = {
             NumParameters = len(ROOT_PARAMETERS),
             pParameters = raw_data(&ROOT_PARAMETERS),
-            NumStaticSamplers = len(STATIC_SAMPLERS),
-            pStaticSamplers = raw_data(&STATIC_SAMPLERS),
+            NumStaticSamplers = len(STATIC_SAMPLER_DESC),
+            pStaticSamplers = raw_data(&STATIC_SAMPLER_DESC),
             Flags = { .ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, .CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED, .SAMPLER_HEAP_DIRECTLY_INDEXED }
         }
     }
@@ -150,7 +146,23 @@ gpu_device_init :: proc(using in_device : ^GPUDevice)
     m_render_target_binder.m_dsv_heap->GetCPUDescriptorHandleForHeapStart(&m_render_target_binder.m_dsv_handle)
 }
 
-gpu_bind_render_targets :: proc(in_device : ^GPUDevice, in_cmd_list : ^d3d12.IGraphicsCommandList, in_render_targets : []RenderTargetBinding, in_depth_target : ^DepthStencilBinding)
+gpu_bind_device_defaults :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandList)
+{
+    in_cmd_list.m_cmds->IASetPrimitiveTopology(.TRIANGLELIST)
+
+    descriptor_heaps : [2]^d3d12.IDescriptorHeap = 
+    {
+        in_device.m_descriptor_pool[.SAMPLER].m_heap,
+        in_device.m_descriptor_pool[.CBV_SRV_UAV].m_heap
+    }
+
+    in_cmd_list.m_cmds->SetDescriptorHeaps(len(descriptor_heaps), raw_data(&descriptor_heaps))
+
+    in_cmd_list.m_cmds->SetComputeRootSignature(in_device.m_root_signature)
+    in_cmd_list.m_cmds->SetGraphicsRootSignature(in_device.m_root_signature)
+}
+
+gpu_bind_render_targets :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandList, in_render_targets : []RenderTargetBinding, in_depth_target : ^DepthStencilBinding)
 {
     using in_device;
 
@@ -174,13 +186,13 @@ gpu_bind_render_targets :: proc(in_device : ^GPUDevice, in_cmd_list : ^d3d12.IGr
     }
     else do dsv_handle = nil
 
-    in_cmd_list->OMSetRenderTargets(d3d12.SIMULTANEOUS_RENDER_TARGET_COUNT, &in_device.m_render_target_binder.m_rtv_handle, true, dsv_handle)
+    in_cmd_list.m_cmds->OMSetRenderTargets(u32(len(in_render_targets)), &in_device.m_render_target_binder.m_rtv_handle, true, dsv_handle)
 }
 
-gpu_clear_render_target :: proc(in_device : ^GPUDevice, in_cmd_list : ^d3d12.IGraphicsCommandList, in_index : u32, in_color : ^[4]f32)
+gpu_clear_render_target :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandList, in_index : u32, in_color : ^[4]f32)
 {
     handle := d3d12.CPU_DESCRIPTOR_HANDLE { in_device.m_render_target_binder.m_rtv_handle.ptr + uint(in_index * in_device.m_render_target_binder.m_rtv_incr) }
-    in_cmd_list->ClearRenderTargetView(handle, in_color, 0, nil)
+    in_cmd_list.m_cmds->ClearRenderTargetView(handle, in_color, 0, nil)
 }
 
 gpu_device_destroy :: proc(using in_device : ^GPUDevice) 
@@ -360,8 +372,32 @@ gpu_create_texture :: proc(using in_device : ^GPUDevice, in_desc : GPUTextureDes
     // TODO: create D3D12MA bindings
     panic_if_failed(m_device->CreateCommittedResource(&heap_properties, heap_flags, &resource_desc, initial_state, clear_value_ptr, d3d12.IResource1_UUID, (^rawptr)(&texture.m_resource)))
 
+    texture.m_resource->SetName(raw_data(windows.utf8_to_utf16(texture.m_desc.debug_name)))
+
     texture_id := gpu_resource_pool_add(&in_device.m_texture_pool, texture)
 
+    gpu_create_texture_descriptor(in_device, texture_id, in_desc)
+
+    return texture_id
+}
+
+gpu_create_buffer_view :: proc(in_device : ^GPUDevice, in_id : GPUBufferID, in_desc : GPUBufferDesc) -> GPUBufferID
+{
+    buffer := gpu_get_buffer(in_device, in_id)^
+    buffer.m_desc = in_desc
+
+    buffer_id := gpu_resource_pool_add(&in_device.m_buffer_pool, buffer)
+    gpu_create_buffer_descriptor(in_device, buffer_id, in_desc)
+
+    return buffer_id
+}
+
+gpu_create_texture_view :: proc(in_device : ^GPUDevice, in_id : GPUTextureID, in_desc : GPUTextureDesc) -> GPUTextureID
+{
+    texture := gpu_get_texture(in_device, in_id)^
+    texture.m_desc = in_desc
+
+    texture_id := gpu_resource_pool_add(&in_device.m_texture_pool, texture)
     gpu_create_texture_descriptor(in_device, texture_id, in_desc)
 
     return texture_id
@@ -401,7 +437,7 @@ gpu_stage_texture :: proc(device : ^GPUDevice, cmds : ^d3d12.IGraphicsCommandLis
     base_data_ptr := cast([^]u8)data
     base_mapped_ptr := cast([^]u8)mapped_ptr
 
-    for row in 0..=nr_of_rows 
+    for row in 0..<nr_of_rows 
     {
         copy_src := base_data_ptr[u64(row) * row_size:]
         copy_dst := base_mapped_ptr[u32(footprint.Offset) + row * footprint.Footprint.RowPitch:]
@@ -409,7 +445,7 @@ gpu_stage_texture :: proc(device : ^GPUDevice, cmds : ^d3d12.IGraphicsCommandLis
     }
 
     src := d3d12.TEXTURE_COPY_LOCATION { pResource = buffer.m_resource, Type = .PLACED_FOOTPRINT, PlacedFootprint = footprint}
-    dst := d3d12.TEXTURE_COPY_LOCATION { pResource = texture.m_resource, Type = .SUBRESOURCE_INDEX, SubresourceIndex = 0 }
+    dst := d3d12.TEXTURE_COPY_LOCATION { pResource = texture.m_resource, Type = .SUBRESOURCE_INDEX, SubresourceIndex = subresource }
 
     cmds->CopyTextureRegion(&dst, 0, 0, 0, &src, nil)
 
@@ -423,4 +459,35 @@ gpu_stage_texture :: proc(device : ^GPUDevice, cmds : ^d3d12.IGraphicsCommandLis
 
     barrier := cd3dx12_barrier_transition(texture.m_resource, {.COPY_DEST}, d3d12.RESOURCE_STATE_GENERIC_READ, subresource)
     cmds->ResourceBarrier(1, &barrier)
+}
+
+gpu_create_graphics_pipeline_state_desc :: proc(in_device : ^GPUDevice, in_pass : RenderPass, in_vs_blob : []u8, in_ps_blob : []u8) -> d3d12.GRAPHICS_PIPELINE_STATE_DESC
+{
+    pso_state := d3d12.GRAPHICS_PIPELINE_STATE_DESC {
+        pRootSignature = in_device.m_root_signature,
+        VS = d3d12.SHADER_BYTECODE { raw_data(in_vs_blob), len(in_vs_blob) },
+        PS = d3d12.SHADER_BYTECODE { raw_data(in_ps_blob), len(in_ps_blob) },
+        BlendState = CD3DX12_BLEND_DESC(),
+        SampleMask = 0xFFFFFFFF,
+        RasterizerState = CD3DX12_RASTERIZER_DESC(),
+        DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(),
+        PrimitiveTopologyType = .TRIANGLE,
+        SampleDesc = dxgi.SAMPLE_DESC { Count = 1 }
+    }
+
+    pso_state.RasterizerState.FrontCounterClockwise = true
+
+    for format, index in in_pass.m_render_target_formats {
+        pso_state.RTVFormats[index] = format
+        pso_state.NumRenderTargets = u32(index + 1)
+    }
+
+    pso_state.DSVFormat = in_pass.m_depth_target_format
+
+    return pso_state
+}
+
+gpu_create_compute_pipeline_state_desc :: proc(in_device : ^GPUDevice, in_pass : RenderPass, in_cs_blob : []u8) -> d3d12.COMPUTE_PIPELINE_STATE_DESC
+{
+    return d3d12.COMPUTE_PIPELINE_STATE_DESC { pRootSignature = in_device.m_root_signature, CS = d3d12.SHADER_BYTECODE { raw_data(in_cs_blob), len(in_cs_blob) }}
 }

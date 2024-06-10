@@ -169,7 +169,8 @@ app_init :: proc(using in_app : ^App) -> bool
             format = dxgi_format,
             width  = u64(in_info.header.dwWidth),
             height = u32(in_info.header.dwHeight),
-            mips   = u16(in_info.header.dwMipMapCount),
+            mips   = max(u16(in_info.header.dwMipMapCount), 1),
+            depth_or_layers = max(u16(in_info.header.dwDepth), 1),
             usage  = .SHADER_READ_ONLY,
             debug_name = in_name
         })
@@ -184,35 +185,14 @@ app_init :: proc(using in_app : ^App) -> bool
     append(&m_texture_uploads, TextureUpload { m_texture = normal_texture, m_data = NORMAL4X4_DDS })
 
     default_textures := add_default_textures_pass(&m_render_graph, &m_device, black_texture, white_texture)
-    //gbuffer_pass_data := add_gbuffer_pass(&m_render_graph);
-    compose_pass_data := add_compose_pass(&m_render_graph, default_textures.m_black_texture, default_textures.m_white_texture)
+    compose_pass_data := add_compose_pass(&m_render_graph, &m_device, default_textures.m_black_texture, default_textures.m_white_texture)
+    pre_ui_pass_data := add_pre_imgui_pass(&m_render_graph, &m_device, compose_pass_data.m_output_texture)
 
-    imgui.CHECKVERSION()
-    imgui.CreateContext()
-    imgui.StyleColorsDark()
-    imgui_impl_sdl2.InitForD3D(m_window)
+    gpu_rg_compile(&m_render_graph, &m_device)
 
-    pixels : ^c.uchar
-    width, height : c.int
-    imgui.FontAtlas_GetTexDataAsAlpha8(imgui.GetIO().Fonts, &pixels, &width, &height);
+    err := init_imgui(&m_device, m_window)
 
-    font_texture_id := gpu_create_texture(&m_device, GPUTextureDesc { 
-        format = .R8_UNORM,
-        width  = u64(width),
-        height = u32(height),
-        usage  = .SHADER_READ_ONLY,
-        debug_name = "ImguiFontTexture"
-    })
-
-    font_texture := gpu_get_texture(&m_device, font_texture_id)
-    font_srv_cpu_handle := gpu_get_cpu_descriptor_handle(&m_device.m_descriptor_pool[.CBV_SRV_UAV], font_texture.m_descriptor)
-    font_srv_gpu_handle := gpu_get_gpu_descriptor_handle(&m_device.m_descriptor_pool[.CBV_SRV_UAV], font_texture.m_descriptor)
-    
-    resource_heap := m_device.m_descriptor_pool[d3d12.DESCRIPTOR_HEAP_TYPE.CBV_SRV_UAV].m_heap
-    err := imgui_impl_dx12.Init(m_device.m_device, FRAME_COUNT, .B8G8R8A8_UNORM, resource_heap, font_srv_cpu_handle, font_srv_gpu_handle) 
-    err |= imgui_impl_dx12.CreateDeviceObjects()
-
-    return err;
+    return err
 }
 
 app_update :: proc(using in_app : ^App, in_dt : f32)
@@ -225,6 +205,10 @@ app_update :: proc(using in_app : ^App, in_dt : f32)
     imgui.Text("Hellope World!")
 
     imgui.SliderInt("V-Sync", &m_config.m_vsync, 0, 2)
+
+    imgui.GetBackgroundDrawList()
+
+    imgui.DrawList_AddTriangleFilled(imgui.GetBackgroundDrawList(), {WINDOW_WIDTH / 2, 100}, {400, WINDOW_HEIGHT - 200}, {WINDOW_WIDTH - 400, WINDOW_HEIGHT - 200}, imgui.ColorConvertFloat4ToU32({0.5, 1.0, 0.0, 1.0}))
 
     imgui.End()
 
@@ -264,39 +248,9 @@ app_update :: proc(using in_app : ^App, in_dt : f32)
     }
 
     // do rendering
-    for &render_pass in m_render_graph.m_render_passes {
-        exec_render_pass(&m_device, graphics_cmds, &render_pass)
-    }
+    gpu_rg_execute(&m_render_graph, &m_device, &bb_data.m_direct_cmd_list, m_frame_counter)
 
-    graphics_cmds->IASetPrimitiveTopology(.TRIANGLELIST)
-
-    descriptor_heaps : [2]^d3d12.IDescriptorHeap = 
-    {
-        m_device.m_descriptor_pool[.SAMPLER].m_heap,
-        m_device.m_descriptor_pool[.CBV_SRV_UAV].m_heap
-    }
-
-    graphics_cmds->SetDescriptorHeaps(len(descriptor_heaps), raw_data(&descriptor_heaps))
-
-    graphics_cmds->SetGraphicsRootSignature(m_device.m_root_signature)
-
-    bb_before_barrier := cd3dx12_barrier_transition(bb_data.m_swapchain_backbuffer, d3d12.RESOURCE_STATE_COMMON, {.RENDER_TARGET})
-    graphics_cmds->ResourceBarrier(1, &bb_before_barrier)
-
-    bb_viewport := cd3dx12_viewport(bb_data.m_swapchain_backbuffer)
-    bb_scissor := d3d12.RECT { i32(bb_viewport.TopLeftX), i32(bb_viewport.TopLeftY), i32(bb_viewport.Width), i32(bb_viewport.Height) }
-
-    graphics_cmds->RSSetViewports(1, &bb_viewport)
-    graphics_cmds->RSSetScissorRects(1, &bb_scissor)
-
-    clear_color := [4]f32 {0.0, 0.0, 0.0, 0.0 }
-    gpu_bind_render_targets(&m_device, graphics_cmds, {{bb_data.m_swapchain_backbuffer, {}}}, nil)
-    gpu_clear_render_target(&m_device, graphics_cmds, 0, &clear_color)
-
-    imgui_impl_dx12.RenderDrawData(imgui.GetDrawData(), graphics_cmds)
-
-    bb_after_barrier := cd3dx12_barrier_transition(bb_data.m_swapchain_backbuffer, {.RENDER_TARGET}, d3d12.RESOURCE_STATE_COMMON)
-    graphics_cmds->ResourceBarrier(1, &bb_after_barrier)
+    render_imgui(&m_device, &bb_data.m_direct_cmd_list, bb_data.m_swapchain_backbuffer)
 
     graphics_cmds->Close()
 

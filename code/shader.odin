@@ -2,9 +2,11 @@ package main
 
 import "core:os"
 import "core:fmt"
+import "core:mem"
 import "core:thread"
 import "core:strings"
 import "core:sys/windows"
+import "core:path/filepath"
 import "core:encoding/json"
 import "vendor:directx/dxc"
 
@@ -123,6 +125,7 @@ compile_shader_dxc :: proc(in_filepath : string, in_defines : string, in_kind : 
     append(&args, windows.L("cs_6_6"))
     
     append(&args, windows.L("-Zi"))
+    append(&args, windows.L("-Qembed_debug"))
     
     append(&args, windows.L("-I"))
     append(&args, windows.L("assets/system/shaders"))
@@ -191,6 +194,7 @@ compile_shader_dxc :: proc(in_filepath : string, in_defines : string, in_kind : 
 
     fmt.printfln("Compiled shader %s successfully.", in_filepath)
 
+    assert(shader != nil)
     return shader;
 }
 
@@ -199,12 +203,16 @@ compile_shader :: proc(in_filepath : string, in_defines : string, in_kind : Shad
     bin : [dynamic]u8 = nil
     dxc_blob : ^dxc.IBlob
 
-    if data, ok := os.read_entire_file(in_filepath); ok {
+    if data, ok := os.read_entire_file(in_filepath); ok 
+    {
         defer delete(data)
-        dxc_blob = compile_shader_dxc(in_filepath, in_defines, in_kind, data)
-    }
 
-    // TODO
+        if dxc_blob := compile_shader_dxc(in_filepath, in_defines, in_kind, data); dxc_blob != nil
+        {
+            resize(&bin, int(dxc_blob->GetBufferSize()))
+            mem.copy(raw_data(bin), dxc_blob->GetBufferPointer(), int(dxc_blob->GetBufferSize()))
+        }
+    }
 
     return bin
 }

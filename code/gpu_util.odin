@@ -104,6 +104,7 @@ cd3dx12_barrier_transition :: proc(in_resource : ^d3d12.IResource, in_before_sta
     }
 }
 
+
 CD3DX12_BLEND_DESC :: proc() -> d3d12.BLEND_DESC
 {
     result := d3d12.BLEND_DESC {
@@ -112,7 +113,7 @@ CD3DX12_BLEND_DESC :: proc() -> d3d12.BLEND_DESC
     }
 
     for &desc in result.RenderTarget do desc = d3d12.RENDER_TARGET_BLEND_DESC {
-        windows.FALSE, windows.FALSE, .ONE, .ZERO, .ADD, .ONE, .ZERO, .ADD, .NOOP, 0xFF
+        windows.FALSE, windows.FALSE, .ONE, .ZERO, .ADD, .ONE, .ZERO, .ADD, .NOOP, 0xF
     }
 
     return result
