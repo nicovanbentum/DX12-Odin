@@ -12,7 +12,7 @@ import "core:sys/windows"
 import "core:path/filepath"
 import "core:encoding/json"
 
-import imgui "third_party/imgui"
+import "third_party/imgui"
 import "third_party/imgui/imgui_impl_sdl2"
 import "third_party/imgui/imgui_impl_dx12"
 
@@ -57,6 +57,8 @@ App :: struct
 {
     m_device : GPUDevice,
     m_config : AppConfig,
+    m_scene : Scene,
+    m_entity : Entity,
     m_running : bool,
     m_frame_index : u32,
     m_frame_counter : u64,
@@ -64,8 +66,8 @@ App :: struct
     m_fence_event : dxgi.HANDLE,
     m_window : ^sdl.Window,
     m_swapchain : ^dxgi.ISwapChain3,
+    m_renderer : Renderer,
     m_render_graph : RenderGraph,
-    m_texture_uploads : [dynamic]TextureUpload,
     m_backbuffer_data : [BACKBUFFER_COUNT]BackBufferData,
 }
 
@@ -83,14 +85,14 @@ AppConfig :: struct
 }
 
 app_init :: proc(using in_app : ^App) -> bool
-{
+{    
     config_path :: "config.json"
 
     if file_data, ok := os.read_entire_file(config_path); ok {
         defer delete(file_data)
         json.unmarshal(file_data, &m_config)
     }
-    
+
     sdl.Init(sdl.INIT_VIDEO)
 
     window_name := strings.clone_to_cstring(m_config.m_name)
@@ -180,11 +182,12 @@ app_init :: proc(using in_app : ^App) -> bool
     white_texture := create_texture_from_dds_info(&m_device, cast(^DDS_FILE_INFO)(raw_data(WHITE4X4_DDS)), false, "white4x4")
     normal_texture := create_texture_from_dds_info(&m_device, cast(^DDS_FILE_INFO)(raw_data(NORMAL4X4_DDS)), false, "normal4x4")
 
-    append(&m_texture_uploads, TextureUpload { m_texture = black_texture, m_data = BLACK4X4_DDS })
-    append(&m_texture_uploads, TextureUpload { m_texture = white_texture, m_data = WHITE4X4_DDS })
-    append(&m_texture_uploads, TextureUpload { m_texture = normal_texture, m_data = NORMAL4X4_DDS })
+    append(&m_renderer.m_pending_texture_uploads, TextureUpload { m_texture = black_texture, m_data = BLACK4X4_DDS })
+    append(&m_renderer.m_pending_texture_uploads, TextureUpload { m_texture = white_texture, m_data = WHITE4X4_DDS })
+    append(&m_renderer.m_pending_texture_uploads, TextureUpload { m_texture = normal_texture, m_data = NORMAL4X4_DDS })
 
     default_textures := add_default_textures_pass(&m_render_graph, &m_device, black_texture, white_texture)
+    gbuffer_pass_data := add_gbuffer_pass(&m_render_graph, &m_device)
     compose_pass_data := add_compose_pass(&m_render_graph, &m_device, default_textures.m_black_texture, default_textures.m_white_texture)
     pre_ui_pass_data := add_pre_imgui_pass(&m_render_graph, &m_device, compose_pass_data.m_output_texture)
 
@@ -201,18 +204,8 @@ app_update :: proc(using in_app : ^App, in_dt : f32)
     imgui_impl_dx12.NewFrame()
     imgui.NewFrame()
 
-    imgui.Begin("Test Window")
-    imgui.Text("Hellope World!")
-
-    imgui.SliderInt("V-Sync", &m_config.m_vsync, 0, 2)
-
-    imgui.GetBackgroundDrawList()
-
-    imgui.DrawList_AddTriangleFilled(imgui.GetBackgroundDrawList(), {WINDOW_WIDTH / 2, 100}, {400, WINDOW_HEIGHT - 200}, {WINDOW_WIDTH - 400, WINDOW_HEIGHT - 200}, imgui.ColorConvertFloat4ToU32({0.5, 1.0, 0.0, 1.0}))
-
-    imgui.End()
-
-    imgui.ShowMetricsWindow()
+    imgui_draw_menubar(in_app, &m_entity)        
+    imgui_draw_outliner(m_entity, &m_scene, &m_entity)
 
     imgui.EndFrame()
     imgui.Render()
@@ -232,13 +225,7 @@ app_update :: proc(using in_app : ^App, in_dt : f32)
     panic_if_failed(copy_cmds->Reset(bb_data.m_copy_cmd_list.m_allocator, nil))
     panic_if_failed(graphics_cmds->Reset(bb_data.m_direct_cmd_list.m_allocator, nil))
 
-    // do uploads
-    for upload in m_texture_uploads {
-        texture := gpu_get_texture(&m_device, upload.m_texture)
-        gpu_stage_texture(&m_device, copy_cmds, texture, upload.m_mip, raw_data(upload.m_data))
-    }
-
-    clear(&m_texture_uploads)
+    renderer_flush_uploads(&m_renderer, &m_device, &bb_data.m_copy_cmd_list, &m_scene)
 
     copy_cmds->Close()
 
@@ -248,7 +235,7 @@ app_update :: proc(using in_app : ^App, in_dt : f32)
     }
 
     // do rendering
-    gpu_rg_execute(&m_render_graph, &m_device, &bb_data.m_direct_cmd_list, m_frame_counter)
+    gpu_rg_execute(&m_render_graph, &m_device, &bb_data.m_direct_cmd_list, &m_scene,  m_frame_counter)
 
     render_imgui(&m_device, &bb_data.m_direct_cmd_list, bb_data.m_swapchain_backbuffer)
 

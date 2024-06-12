@@ -46,11 +46,12 @@ DepthStencilBinding :: struct
 
 StagingBuffer :: struct
 {
-    retired : bool,
-    frame_id : u32,
-    buffer_id : GPUBufferID,
     size : u32,
-    capacity : u32
+    capacity : u32,
+    frame_id : u32,
+    retired : bool,
+    buffer_id : GPUBufferID,
+    mapped_ptr : rawptr
 }
 
 GPUDevice :: struct
@@ -181,8 +182,11 @@ gpu_bind_render_targets :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandLi
 
     if in_depth_target != nil
     {
+        desc := &in_depth_target.m_description
+        if in_depth_target.m_description.ViewDimension == .UNKNOWN || in_depth_target.m_description.Format == .UNKNOWN do desc = nil
+
         dsv_handle := in_device.m_render_target_binder.m_dsv_handle
-        m_device->CreateDepthStencilView(in_depth_target.m_resource, &in_depth_target.m_description, dsv_handle)
+        m_device->CreateDepthStencilView(in_depth_target.m_resource, desc, dsv_handle)
     }
     else do dsv_handle = nil
 
@@ -193,6 +197,17 @@ gpu_clear_render_target :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandLi
 {
     handle := d3d12.CPU_DESCRIPTOR_HANDLE { in_device.m_render_target_binder.m_rtv_handle.ptr + uint(in_index * in_device.m_render_target_binder.m_rtv_incr) }
     in_cmd_list.m_cmds->ClearRenderTargetView(handle, in_color, 0, nil)
+}
+
+gpu_clear_depth_stencil_target :: proc(device : ^GPUDevice, cmds : ^CommandList, depth : ^f32, stencil : ^u8 = nil)
+{
+    handle := d3d12.CPU_DESCRIPTOR_HANDLE { device.m_render_target_binder.m_dsv_handle.ptr }
+
+    clear_flags : d3d12.CLEAR_FLAGS = {}
+    if depth != nil do clear_flags |=  { .DEPTH }
+    if stencil != nil do clear_flags |= { .STENCIL }
+
+    cmds.m_cmds->ClearDepthStencilView(handle, clear_flags, depth^, stencil^, 0, nil)
 }
 
 gpu_device_destroy :: proc(using in_device : ^GPUDevice) 
@@ -411,6 +426,43 @@ gpu_get_buffer :: proc(in_device : ^GPUDevice, in_buffer_id : GPUBufferID) -> ^G
 gpu_get_texture :: proc(in_device : ^GPUDevice, in_texture_id : GPUTextureID) -> ^GPUTexture
 {
     return &in_device.m_texture_pool.m_storage[in_texture_id.m_index]
+}
+
+gpu_stage_buffer :: proc(device : ^GPUDevice, cmds : ^d3d12.IGraphicsCommandList, dst_buffer : ^GPUBuffer, offset : u32, data : rawptr, size : u32)
+{
+    for &buffer in device.m_staging_buffers 
+    {
+        if buffer.retired && size <= buffer.capacity - buffer.size 
+        {
+            mem.copy(buffer.mapped_ptr, data, int(size))
+
+            staging_buffer := gpu_get_buffer(device, buffer.buffer_id)
+            cmds->CopyBufferRegion(dst_buffer.m_resource, u64(offset), staging_buffer.m_resource, u64(buffer.size), u64(size))
+        }
+    }
+
+    buffer_id := gpu_create_buffer(device, GPUBufferDesc {
+        size  = u64(size),
+        usage = .UPLOAD,
+        debug_name = "StagingBuffer"
+    })
+
+    staging_buffer := gpu_get_buffer(device, buffer_id)
+
+    mapped_ptr : rawptr
+    staging_buffer.m_resource->Map(0, nil, &mapped_ptr)
+    mem.copy(mapped_ptr, data, int(size))
+
+    assert(dst_buffer.m_desc.size >= u64(size))
+    cmds->CopyBufferRegion(dst_buffer.m_resource, u64(offset), staging_buffer.m_resource, 0, u64(size))
+
+    append(&device.m_staging_buffers, StagingBuffer {
+        retired   = false,
+        //frame_id  = cmds.frame_id,
+        buffer_id = buffer_id,
+        size      = size,
+        capacity  = size
+    })
 }
 
 gpu_stage_texture :: proc(device : ^GPUDevice, cmds : ^d3d12.IGraphicsCommandList, texture : ^GPUTexture, subresource : u32, data : rawptr)

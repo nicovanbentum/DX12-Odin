@@ -62,7 +62,7 @@ RenderPassDesc :: struct($T : typeid)
 {
     m_name : string,
     m_data : T,
-    m_exec : proc(device : ^GPUDevice, cmd_list : ^CommandList, resources : ^RenderGraphResources, data : ^T)
+    m_exec : proc(device : ^GPUDevice, cmd_list : ^CommandList, in_scene : ^Scene, resources : ^RenderGraphResources, data : ^T)
 }
 
 RenderPass :: struct
@@ -479,7 +479,7 @@ gpu_rg_bind_render_targets :: proc(using in_graph : ^RenderGraph, in_device : ^G
     gpu_bind_render_targets(in_device, in_cmd_list, rt_bindings[:rt_count], dsv_binding_ptr)
 }
 
-gpu_rg_execute :: proc(using in_graph : ^RenderGraph, in_device : ^GPUDevice, in_cmd_list : ^CommandList, in_frame_counter : u64) 
+gpu_rg_execute :: proc(using in_graph : ^RenderGraph, in_device : ^GPUDevice, in_cmd_list : ^CommandList, in_scene : ^Scene, in_frame_counter : u64) 
 {
     gpu_bind_device_defaults(in_device, in_cmd_list)
 
@@ -493,7 +493,7 @@ gpu_rg_execute :: proc(using in_graph : ^RenderGraph, in_device : ^GPUDevice, in
             gpu_rg_bind_render_targets(in_graph, in_device, in_cmd_list, render_pass)
         }
 
-        exec_render_pass(in_device, in_cmd_list, &in_graph.m_resources, &render_pass.m_desc)
+        exec_render_pass(in_device, in_cmd_list, in_scene, &in_graph.m_resources, &render_pass.m_desc)
 
         if barrier_count := len(render_pass.m_exit_barriers); barrier_count > 0 {
             in_cmd_list.m_cmds->ResourceBarrier(u32(barrier_count), raw_data(render_pass.m_exit_barriers))
