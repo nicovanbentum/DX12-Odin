@@ -90,6 +90,8 @@ add_gbuffer_pass :: proc(using rg : ^RenderGraph, device : ^GPUDevice) -> GBuffe
             clear_stencil_value : u8 = 0
             gpu_clear_depth_stencil_target(in_device, in_cmd_list, &clear_depth_value, &clear_stencil_value)
 
+            in_cmd_list.m_cmds->SetPipelineState(data.m_pipeline)
+
             mesh_array := scene_get_component_array(in_scene, Mesh)
 
             for &mesh, index in mesh_array.components 

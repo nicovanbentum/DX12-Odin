@@ -86,6 +86,7 @@ imgui_draw_menubar :: proc(app : ^App, active_entity : ^Entity)
             {
                 new_entity := scene_create_entity(&app.m_scene)
                 new_entity_name := scene_add_component(&app.m_scene, new_entity, Name, Name{})
+                new_entity_material := scene_add_component(&app.m_scene, new_entity, Material, Material{})
                 new_entity_name.name = "Material"
             }
 
@@ -162,7 +163,7 @@ imgui_draw_outliner :: proc(entity : Entity, scene : ^Scene, active_entity : ^En
 
     for index in 0..<scene.entity.index 
     {
-        entity := Entity { index = index }
+        entity := Entity { valid = 1, index = index }
 
         imgui.PushIDInt(i32(entity))
         defer imgui.PopID()
@@ -173,6 +174,12 @@ imgui_draw_outliner :: proc(entity : Entity, scene : ^Scene, active_entity : ^En
             active_entity^ = entity
         }
     }
+
+    imgui.Separator()
+
+    imgui.Text("Entity: %i , %i, %i", active_entity.valid, active_entity.index, active_entity.generation)
+
+    imgui.Separator()
 
     if active_entity.index < scene.entity.index 
     {
@@ -223,11 +230,48 @@ draw_mesh_component :: proc(entity : Entity, mesh : ^Mesh)
     imgui.Text("%i Triangles", len(mesh.indices) / 3)
 }
 
+draw_material_component :: proc(entity : Entity, material : ^Material)
+{
+    if !imgui.CollapsingHeader("Material", {.DefaultOpen}) do return
+
+    imgui.ColorEdit4("Albedo", &material.albedo, {.Float, .HDR})
+    imgui.ColorEdit4("Emissive", &material.emissive, {.Float, .HDR})
+
+    imgui.DragFloat("Metallic", &material.metallic, 0.001, 0.0, 1.0)
+    imgui.DragFloat("Roughness", &material.roughness, 0.001, 0.0, 1.0)
+
+    texture_labels := [MaterialTextureKind]cstring {
+        .ALBEDO = "Albedo Map       ",
+        .NORMALS = "Normal Map       ",
+        .EMISSIVE = "Emissive Map    ",
+        .METALLIC = "Metallic Map      ",
+        .ROUGHNESS = "Roughness Map",
+    }
+
+    for &texture, index in material.textures {
+        imgui.Text(texture_labels[index])
+        imgui.SameLine()
+
+        if imgui.Button("load..") {}
+        imgui.SameLine()
+
+        file_text := len(texture.file_path) > 0 ? texture.file_path : "N/A"
+        tooltip_text := len(texture.file_path) > 0 ? texture.file_path : "No File Loaded"
+
+        temp_file_text := strings.clone_to_cstring(file_text, context.temp_allocator)
+        temp_tooltip_text := strings.clone_to_cstring(tooltip_text, context.temp_allocator)
+
+        imgui.Text(temp_file_text)
+        if imgui.IsItemHovered() do imgui.SetTooltip(temp_tooltip_text)
+    }
+}
+
 draw_entity_component :: proc(entity : Entity, any_component_array : ^AnyComponentArray)
 {
     switch &array in any_component_array {
-        case ComponentArray(Name) : draw_name_component(entity, component_array_get(&array, entity))
-        case ComponentArray(Mesh) : draw_mesh_component(entity, component_array_get(&array, entity))
-        case ComponentArray(Transform) : draw_transform_component(entity, component_array_get(&array, entity))
+        case ComponentArray(Name) : if component_array_contains(&array, entity) do draw_name_component(entity, component_array_get(&array, entity))
+        case ComponentArray(Mesh) : if component_array_contains(&array, entity) do draw_mesh_component(entity, component_array_get(&array, entity))
+        case ComponentArray(Material) : if component_array_contains(&array, entity) do draw_material_component(entity, component_array_get(&array, entity))
+        case ComponentArray(Transform) : if component_array_contains(&array, entity) do draw_transform_component(entity, component_array_get(&array, entity))
     }
 }

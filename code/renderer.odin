@@ -1,20 +1,124 @@
 package main
 
 import "core:c"
+import "core:math/linalg/hlsl"
 import "vendor:sdl2"
 import "vendor:directx/d3d12"
 import "third_party/imgui"
 import "third_party/imgui/imgui_impl_dx12"
 import "third_party/imgui/imgui_impl_sdl2"
 
-Renderer :: struct
-{
+Renderer :: struct {
     m_pending_mesh_uploads : [dynamic]Entity,
     m_pending_texture_uploads : [dynamic]TextureUpload
 }
 
-renderer_flush_uploads :: proc(renderer : ^Renderer, device : ^GPUDevice, cmds : ^CommandList, scene : ^Scene)
+create_or_grow_buffer :: proc(device : ^GPUDevice, buffer : GPUBufferID, desc : GPUBufferDesc) -> GPUBufferID 
 {
+    current_buffer := buffer
+
+    if current_buffer.m_valid == 1 {
+        if desc.size > gpu_get_buffer(device, current_buffer).m_desc.size {
+            old_buffer := current_buffer
+            current_buffer = gpu_create_buffer(device, desc)
+            gpu_release_buffer(device, old_buffer)
+        }
+    }
+    else do current_buffer = gpu_create_buffer(device, desc)
+
+    return current_buffer
+}
+
+renderer_upload_materials :: proc(renderer : ^Renderer, device : ^GPUDevice, cmds : ^CommandList, scene : ^Scene) {
+    materials : []Material = scene_get_component_array(scene, Material).components[:]
+    if len(materials) == 0 do materials = { DefaultMaterial }
+
+    RT_Material :: struct {
+        mMetallic : f32,
+        mRoughness : f32,
+        mAlbedoTexture : u32,
+        mNormalsTexture : u32,
+        mEmissiveTexture : u32,
+        mMetallicTexture : u32,
+        mRoughnessTexture : u32,
+        mPad0 : u32,
+        mAlbedo : [4]f32,
+        mEmissive : [4]f32
+    }
+
+    rt_materials : [dynamic]RT_Material
+    reserve(&rt_materials, len(materials))
+
+    for &material in materials {
+        append(&rt_materials, RT_Material {
+            mAlbedo = material.albedo,
+            mEmissive = material.emissive,
+            mMetallic = material.metallic,
+            mRoughness = material.roughness,
+            mAlbedoTexture = gpu_get_texture(device, GPUTextureID(material.textures[.ALBEDO].gpu_handle)).m_descriptor.m_index,
+            mNormalsTexture = gpu_get_texture(device, GPUTextureID(material.textures[.NORMALS].gpu_handle)).m_descriptor.m_index,
+            mEmissiveTexture = gpu_get_texture(device, GPUTextureID(material.textures[.EMISSIVE].gpu_handle)).m_descriptor.m_index,
+            mMetallicTexture = gpu_get_texture(device, GPUTextureID(material.textures[.METALLIC].gpu_handle)).m_descriptor.m_index,
+            mRoughnessTexture = gpu_get_texture(device, GPUTextureID(material.textures[.ROUGHNESS].gpu_handle)).m_descriptor.m_index,
+        })
+    }
+
+    scene.materials_buffer = create_or_grow_buffer(device, scene.materials_buffer, GPUBufferDesc {
+        size   = u64(size_of(RT_Material) * len(rt_materials)),
+        stride = size_of(RT_Material),
+        usage  = .SHADER_READ_ONLY,
+        debug_name = "MaterialsBuffer"
+    })
+
+    materials_buffer := gpu_get_buffer(device, scene.materials_buffer)
+    gpu_stage_buffer(device, cmds.m_cmds, materials_buffer, 0, raw_data(rt_materials), u32(materials_buffer.m_desc.size))
+}
+
+renderer_upload_instances :: proc(renderer : ^Renderer, device : ^GPUDevice, cmds : ^CommandList, scene : ^Scene) {
+    mesh_array : ^ComponentArray(Mesh) = scene_get_component_array(scene, Mesh)
+    material_array : ^ComponentArray(Material) = scene_get_component_array(scene, Material)
+    transform_array : ^ComponentArray(Transform) = scene_get_component_array(scene, Transform)
+
+    
+    if len(mesh_array.components) == 0 do return
+    
+    RT_Instance :: struct {
+        index_buffer : u32,
+        vertex_buffer : u32,
+        material_index : u32,
+        local_to_world_transform : hlsl.float4x4,
+        world_to_local_transform : hlsl.float4x4
+    }
+    
+    rt_instances : [dynamic]RT_Instance
+    reserve(&rt_instances, len(mesh_array.components))
+    
+    for &mesh, index in mesh_array.components {
+        entity : Entity = mesh_array.entities[index]
+        transform : ^Transform = component_array_get(transform_array, entity)
+        if transform == nil do continue
+
+        append(&rt_instances, RT_Instance{
+            index_buffer = gpu_get_buffer(device, GPUBufferID(mesh.index_buffer)).m_descriptor.m_index,
+            vertex_buffer = gpu_get_buffer(device, GPUBufferID(mesh.vertex_buffer)).m_descriptor.m_index,
+            material_index = mesh.material if component_array_contains(material_array, Entity(mesh.material)) else 0,
+            local_to_world_transform = transform.world_transform,
+            world_to_local_transform = hlsl.inverse(transform.world_transform)
+        })
+    }
+
+    scene.instances_buffer = create_or_grow_buffer(device, scene.instances_buffer, GPUBufferDesc {
+        size   = u64(size_of(RT_Instance) * len(rt_instances)),
+        stride = size_of(RT_Instance),
+        usage  = .SHADER_READ_ONLY,
+        debug_name = "InstancesBuffer"
+    })
+
+    instances_buffer := gpu_get_buffer(device, scene.instances_buffer)
+    gpu_stage_buffer(device, cmds.m_cmds, instances_buffer, 0, raw_data(rt_instances), u32(instances_buffer.m_desc.size))
+}
+
+renderer_flush_uploads :: proc(renderer : ^Renderer, device : ^GPUDevice, cmds : ^CommandList, scene : ^Scene) {
     for texture_upload in renderer.m_pending_texture_uploads {
         texture := gpu_get_texture(device, texture_upload.m_texture)
         gpu_stage_texture(device, cmds.m_cmds, texture, texture_upload.m_mip, raw_data(texture_upload.m_data))
@@ -47,8 +151,7 @@ renderer_flush_uploads :: proc(renderer : ^Renderer, device : ^GPUDevice, cmds :
     clear(&renderer.m_pending_texture_uploads)
 }
 
-gpu_create_mesh_buffers :: proc(device : ^GPUDevice, mesh : ^Mesh, entity : Entity) 
-{
+gpu_create_mesh_buffers :: proc(device : ^GPUDevice, mesh : ^Mesh, entity : Entity) {
     indices_size := len(mesh.indices) * size_of(u32)
     vertices_size := len(mesh.vertices) * size_of(f32)
 
@@ -72,8 +175,7 @@ gpu_create_mesh_buffers :: proc(device : ^GPUDevice, mesh : ^Mesh, entity : Enti
     mesh.vertex_buffer = u32(vertex_buffer)
 }
 
-init_imgui :: proc(in_device : ^GPUDevice, in_window : ^sdl2.Window) -> bool
-{
+init_imgui :: proc(in_device : ^GPUDevice, in_window : ^sdl2.Window) -> bool {
     imgui.CHECKVERSION()
     imgui.CreateContext()
     imgui.StyleColorsDark()
@@ -187,8 +289,7 @@ init_imgui :: proc(in_device : ^GPUDevice, in_window : ^sdl2.Window) -> bool
     return err
 }
 
-render_imgui :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandList, in_backbuffer : ^d3d12.IResource)
-{
+render_imgui :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandList, in_backbuffer : ^d3d12.IResource) {
     gpu_bind_device_defaults(in_device, in_cmd_list)
 
     bb_before_barrier := cd3dx12_barrier_transition(in_backbuffer, d3d12.RESOURCE_STATE_COMMON, {.RENDER_TARGET})

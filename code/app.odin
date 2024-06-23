@@ -277,6 +277,8 @@ app_run :: proc(using in_app : ^App)
         app_update(in_app, delta_time)
     
         m_frame_counter += 1
+
+        free_all(context.temp_allocator)
     }
 }
 

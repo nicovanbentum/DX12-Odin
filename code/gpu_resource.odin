@@ -114,8 +114,9 @@ GPUTexture :: struct
 
 GPUResourceID :: bit_field u32 
 {
+    m_valid : u32 | 1,
     m_index : u32 | 20,
-    m_generation : u32 | 12
+    m_generation : u32 | 11
 }
 
 GPUBufferID :: distinct GPUResourceID
@@ -165,6 +166,8 @@ gpu_descriptor_pool_create :: proc(using in_pool : ^GPUDescriptorPool, in_device
 gpu_resource_pool_add :: proc(using in_pool : ^GPUResourcePool($Resource, $ResourceID), in_resource : Resource) -> ResourceID
 {
     id : ResourceID
+    id.m_valid = 1
+
     if len(m_free_indices) == 0 
     {
         append(&m_storage, in_resource)
@@ -184,10 +187,10 @@ gpu_resource_pool_add :: proc(using in_pool : ^GPUResourcePool($Resource, $Resou
      return id
 }
 
-gpu_resource_pool_remove :: proc(using in_pool : ^GPUResourcePool($Resource, $ResourceID), in_id : GPUResourceID) 
+gpu_resource_pool_remove :: proc(using in_pool : ^GPUResourcePool($Resource, $ResourceID), in_id : ResourceID) 
 {
     m_generations[in_id.m_index] += 1
-    append(m_free_indices, in_id.m_index)
+    append(&m_free_indices, in_id.m_index)
 }
 
 gpu_resource_pool_clear :: proc(using in_pool : ^GPUResourcePool($Resource, $ResourceID)) 

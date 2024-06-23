@@ -18,13 +18,13 @@ RESOURCE_HEAP_SIZE :: 1000000 - CLEAR_HEAP_SIZE
 ROOT_SIGNATURE_SIZE :: 64 * size_of(windows.DWORD)
 ROOT_CONSTANTS_SIZE :: ROOT_SIGNATURE_SIZE - 3 * 2 * size_of(windows.DWORD)
 
-BIND_SLOT :: enum 
-{
-    CBV0, SRV0, SRV1
+BIND_SLOT :: enum {
+    CBV0, 
+    SRV0, 
+    SRV1
 }
 
-RenderTargetBinder :: struct
-{
+RenderTargetBinder :: struct {
     m_rtv_incr : u32,
     m_rtv_heap : ^d3d12.IDescriptorHeap,
     m_dsv_heap : ^d3d12.IDescriptorHeap,
@@ -32,20 +32,17 @@ RenderTargetBinder :: struct
     m_dsv_handle : d3d12.CPU_DESCRIPTOR_HANDLE
 }
 
-RenderTargetBinding :: struct
-{
+RenderTargetBinding :: struct {
     m_resource : ^d3d12.IResource,
     m_description : d3d12.RENDER_TARGET_VIEW_DESC,
 }
 
-DepthStencilBinding :: struct
-{
+DepthStencilBinding :: struct {
     m_resource : ^d3d12.IResource,
     m_description : d3d12.DEPTH_STENCIL_VIEW_DESC
 }
 
-StagingBuffer :: struct
-{
+StagingBuffer :: struct {
     size : u32,
     capacity : u32,
     frame_id : u32,
@@ -54,8 +51,7 @@ StagingBuffer :: struct
     mapped_ptr : rawptr
 }
 
-GPUDevice :: struct
-{
+GPUDevice :: struct {
     m_device : ^d3d12.IDevice5,
     m_adapter : ^dxgi.IAdapter1,
     m_copy_queue : ^d3d12.ICommandQueue,
@@ -69,13 +65,10 @@ GPUDevice :: struct
     m_descriptor_pool : [d3d12.DESCRIPTOR_HEAP_TYPE]GPUDescriptorPool
 }
 
-gpu_device_init :: proc(using in_device : ^GPUDevice)
-{
-    when ODIN_DEBUG 
-    {
+gpu_device_init :: proc(using in_device : ^GPUDevice) {
+    when ODIN_DEBUG {
         debug_interface : ^d3d12.IDebug1
-        if windows.SUCCEEDED(d3d12.GetDebugInterface(d3d12.IDebug1_UUID, (^rawptr)(&debug_interface)))
-        {
+        if windows.SUCCEEDED(d3d12.GetDebugInterface(d3d12.IDebug1_UUID, (^rawptr)(&debug_interface))) {
             debug_interface->EnableDebugLayer()
             debug_interface->SetEnableGPUBasedValidation(true)
             debug_interface->SetEnableSynchronizedCommandQueueValidation(true)
@@ -147,12 +140,10 @@ gpu_device_init :: proc(using in_device : ^GPUDevice)
     m_render_target_binder.m_dsv_heap->GetCPUDescriptorHandleForHeapStart(&m_render_target_binder.m_dsv_handle)
 }
 
-gpu_bind_device_defaults :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandList)
-{
+gpu_bind_device_defaults :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandList) {
     in_cmd_list.m_cmds->IASetPrimitiveTopology(.TRIANGLELIST)
 
-    descriptor_heaps : [2]^d3d12.IDescriptorHeap = 
-    {
+    descriptor_heaps : [2]^d3d12.IDescriptorHeap = {
         in_device.m_descriptor_pool[.SAMPLER].m_heap,
         in_device.m_descriptor_pool[.CBV_SRV_UAV].m_heap
     }
@@ -163,13 +154,10 @@ gpu_bind_device_defaults :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandL
     in_cmd_list.m_cmds->SetGraphicsRootSignature(in_device.m_root_signature)
 }
 
-gpu_bind_render_targets :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandList, in_render_targets : []RenderTargetBinding, in_depth_target : ^DepthStencilBinding)
-{
-    using in_device;
-
+gpu_bind_render_targets :: proc(using in_device : ^GPUDevice, in_cmd_list : ^CommandList, in_render_targets : []RenderTargetBinding, in_depth_target : ^DepthStencilBinding) {
     rtv_handle := in_device.m_render_target_binder.m_rtv_handle
-    for &render_target in in_render_targets
-    {
+
+    for &render_target in in_render_targets {
         desc := &render_target.m_description
         if render_target.m_description.ViewDimension == .UNKNOWN || render_target.m_description.Format == .UNKNOWN do desc = nil
 
@@ -180,8 +168,7 @@ gpu_bind_render_targets :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandLi
 
     dsv_handle := &in_device.m_render_target_binder.m_dsv_handle
 
-    if in_depth_target != nil
-    {
+    if in_depth_target != nil {
         desc := &in_depth_target.m_description
         if in_depth_target.m_description.ViewDimension == .UNKNOWN || in_depth_target.m_description.Format == .UNKNOWN do desc = nil
 
@@ -193,14 +180,12 @@ gpu_bind_render_targets :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandLi
     in_cmd_list.m_cmds->OMSetRenderTargets(u32(len(in_render_targets)), &in_device.m_render_target_binder.m_rtv_handle, true, dsv_handle)
 }
 
-gpu_clear_render_target :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandList, in_index : u32, in_color : ^[4]f32)
-{
+gpu_clear_render_target :: proc(in_device : ^GPUDevice, in_cmd_list : ^CommandList, in_index : u32, in_color : ^[4]f32) {
     handle := d3d12.CPU_DESCRIPTOR_HANDLE { in_device.m_render_target_binder.m_rtv_handle.ptr + uint(in_index * in_device.m_render_target_binder.m_rtv_incr) }
     in_cmd_list.m_cmds->ClearRenderTargetView(handle, in_color, 0, nil)
 }
 
-gpu_clear_depth_stencil_target :: proc(device : ^GPUDevice, cmds : ^CommandList, depth : ^f32, stencil : ^u8 = nil)
-{
+gpu_clear_depth_stencil_target :: proc(device : ^GPUDevice, cmds : ^CommandList, depth : ^f32, stencil : ^u8 = nil) {
     handle := d3d12.CPU_DESCRIPTOR_HANDLE { device.m_render_target_binder.m_dsv_handle.ptr }
 
     clear_flags : d3d12.CLEAR_FLAGS = {}
@@ -210,8 +195,7 @@ gpu_clear_depth_stencil_target :: proc(device : ^GPUDevice, cmds : ^CommandList,
     cmds.m_cmds->ClearDepthStencilView(handle, clear_flags, depth^, stencil^, 0, nil)
 }
 
-gpu_device_destroy :: proc(using in_device : ^GPUDevice) 
-{
+gpu_device_destroy :: proc(using in_device : ^GPUDevice) {
     m_device->Release()
     m_adapter->Release()
     m_copy_queue->Release()
@@ -222,22 +206,19 @@ gpu_device_destroy :: proc(using in_device : ^GPUDevice)
     for &pool in m_descriptor_pool do gpu_resource_pool_clear(&pool.m_pool)
 }
 
-gpu_get_cpu_descriptor_handle :: proc(in_descriptor_pool : ^GPUDescriptorPool, in_descriptor : GPUDescriptorID) -> d3d12.CPU_DESCRIPTOR_HANDLE
-{
+gpu_get_cpu_descriptor_handle :: proc(in_descriptor_pool : ^GPUDescriptorPool, in_descriptor : GPUDescriptorID) -> d3d12.CPU_DESCRIPTOR_HANDLE {
     handle := d3d12.CPU_DESCRIPTOR_HANDLE {}
     in_descriptor_pool.m_heap->GetCPUDescriptorHandleForHeapStart(&handle)
     return d3d12.CPU_DESCRIPTOR_HANDLE { handle.ptr + uint(in_descriptor.m_index * in_descriptor_pool.m_heap_incr) }
 }
 
-gpu_get_gpu_descriptor_handle :: proc(in_descriptor_pool : ^GPUDescriptorPool, in_descriptor : GPUDescriptorID) -> d3d12.GPU_DESCRIPTOR_HANDLE
-{
+gpu_get_gpu_descriptor_handle :: proc(in_descriptor_pool : ^GPUDescriptorPool, in_descriptor : GPUDescriptorID) -> d3d12.GPU_DESCRIPTOR_HANDLE {
     handle := d3d12.GPU_DESCRIPTOR_HANDLE {}
     in_descriptor_pool.m_heap->GetGPUDescriptorHandleForHeapStart(&handle)
     return d3d12.GPU_DESCRIPTOR_HANDLE { handle.ptr + u64(in_descriptor.m_index * in_descriptor_pool.m_heap_incr) }
 }
 
-gpu_create_uav :: proc(using in_device : ^GPUDevice, in_resource : GPUResource, in_desc : ^d3d12.UNORDERED_ACCESS_VIEW_DESC) -> GPUDescriptorID
-{
+gpu_create_uav :: proc(using in_device : ^GPUDevice, in_resource : GPUResource, in_desc : ^d3d12.UNORDERED_ACCESS_VIEW_DESC) -> GPUDescriptorID {
     heap := &m_descriptor_pool[d3d12.DESCRIPTOR_HEAP_TYPE.CBV_SRV_UAV]
     descriptor := gpu_resource_pool_add(&heap.m_pool, in_resource)
     descriptor_handle := gpu_get_cpu_descriptor_handle(heap, descriptor)
@@ -247,8 +228,7 @@ gpu_create_uav :: proc(using in_device : ^GPUDevice, in_resource : GPUResource, 
     return descriptor
 }
 
-gpu_create_srv :: proc(using in_device : ^GPUDevice, in_resource : GPUResource, in_desc : ^d3d12.SHADER_RESOURCE_VIEW_DESC) -> GPUDescriptorID
-{
+gpu_create_srv :: proc(using in_device : ^GPUDevice, in_resource : GPUResource, in_desc : ^d3d12.SHADER_RESOURCE_VIEW_DESC) -> GPUDescriptorID {
     heap := &m_descriptor_pool[d3d12.DESCRIPTOR_HEAP_TYPE.CBV_SRV_UAV]
     descriptor := gpu_resource_pool_add(&heap.m_pool, in_resource)
     descriptor_handle := gpu_get_cpu_descriptor_handle(heap, descriptor)
@@ -258,52 +238,42 @@ gpu_create_srv :: proc(using in_device : ^GPUDevice, in_resource : GPUResource, 
     return descriptor
 }
 
-gpu_create_buffer_descriptor :: proc(using in_device : ^GPUDevice, in_buffer_id : GPUBufferID, in_desc : GPUBufferDesc)
-{
+gpu_create_buffer_descriptor :: proc(using in_device : ^GPUDevice, in_buffer_id : GPUBufferID, in_desc : GPUBufferDesc) {
     buffer := gpu_get_buffer(in_device, in_buffer_id)
     buffer.m_desc.usage = in_desc.usage
 
-    switch (in_desc.usage)
-    {
+    switch (in_desc.usage) {
         case .READBACK: break
-        case .SHADER_READ_WRITE: 
-        {
+        case .SHADER_READ_WRITE: {
             uav_desc := gpu_buffer_desc_to_uav_desc(in_desc)
             buffer.m_descriptor = gpu_create_uav(in_device, buffer, &uav_desc)
         }
-        case .UPLOAD, .GENERAL, .INDEX_BUFFER, .VERTEX_BUFFER, .SHADER_READ_ONLY, .INDIRECT_ARGUMENTS, .ACCELERATION_STRUCTURE: 
-        {
+        case .UPLOAD, .GENERAL, .INDEX_BUFFER, .VERTEX_BUFFER, .SHADER_READ_ONLY, .INDIRECT_ARGUMENTS, .ACCELERATION_STRUCTURE: {
             srv_desc := gpu_buffer_desc_to_srv_desc(in_desc)
 
-            if in_desc.usage == .ACCELERATION_STRUCTURE 
-            {
+            if in_desc.usage == .ACCELERATION_STRUCTURE {
                 srv_desc.RaytracingAccelerationStructure.Location = buffer.m_resource->GetGPUVirtualAddress()
                 // resource must be nil, since the resource location comes from a GPUVA in desc 
                 resource := GPUResource { m_resource = nil }
                 buffer.m_descriptor = gpu_create_srv(in_device, resource, &srv_desc)
             }
-            else if in_desc.format != .UNKNOWN || in_desc.stride > 0
-            {
+            else if in_desc.format != .UNKNOWN || in_desc.stride > 0 {
                 buffer.m_descriptor = gpu_create_srv(in_device, buffer, &srv_desc)
             }
         }
     }
 }
 
-gpu_create_texture_descriptor :: proc(using in_device : ^GPUDevice, in_texture_id : GPUTextureID, in_desc : GPUTextureDesc)
-{
+gpu_create_texture_descriptor :: proc(using in_device : ^GPUDevice, in_texture_id : GPUTextureID, in_desc : GPUTextureDesc) {
     texture := gpu_get_texture(in_device, in_texture_id)
     texture.m_desc.usage = in_desc.usage
 
-    switch (in_desc.usage)
-    {
-        case .SHADER_READ_ONLY: 
-        {
+    switch (in_desc.usage) {
+        case .SHADER_READ_ONLY: {
             srv_desc := gpu_texture_desc_to_srv_desc(in_desc)
             texture.m_descriptor = gpu_create_srv(in_device, texture.resource, &srv_desc)            
         }
-        case .SHADER_READ_WRITE:
-        {
+        case .SHADER_READ_WRITE: {
             uav_desc := gpu_texture_desc_to_uav_desc(in_desc)
             texture.m_descriptor = gpu_create_uav(in_device, texture.resource, &uav_desc)
         }
@@ -311,8 +281,7 @@ gpu_create_texture_descriptor :: proc(using in_device : ^GPUDevice, in_texture_i
     }
 }
 
-gpu_create_buffer :: proc(using in_device : ^GPUDevice, in_desc : GPUBufferDesc) -> GPUBufferID
-{
+gpu_create_buffer :: proc(using in_device : ^GPUDevice, in_desc : GPUBufferDesc) -> GPUBufferID {
     buffer := GPUBuffer { m_desc = in_desc }
 
     heap_properties : d3d12.HEAP_PROPERTIES = { Type = in_desc.mapped ? d3d12.HEAP_TYPE.UPLOAD : d3d12.HEAP_TYPE.DEFAULT }
@@ -328,8 +297,7 @@ gpu_create_buffer :: proc(using in_device : ^GPUDevice, in_desc : GPUBufferDesc)
 
     resource_desc := cd3dx12_buffer_desc(in_desc.size)
 
-    #partial switch (in_desc.usage)
-    {
+    #partial switch (in_desc.usage) {
         case .VERTEX_BUFFER, .INDEX_BUFFER : {
             if !in_desc.mapped do resource_desc.Flags = { .ALLOW_UNORDERED_ACCESS }
         }
@@ -348,6 +316,17 @@ gpu_create_buffer :: proc(using in_device : ^GPUDevice, in_desc : GPUBufferDesc)
     gpu_create_buffer_descriptor(in_device, buffer_id, in_desc)
 
     return buffer_id
+}
+
+gpu_release_buffer :: proc(using device : ^GPUDevice, buffer_id : GPUBufferID) {
+    buffer := gpu_get_buffer(device, buffer_id)
+
+    assert(buffer_id.m_valid == 1)
+    gpu_resource_pool_remove(&m_buffer_pool, buffer_id)
+
+    if buffer.m_descriptor.m_valid == 1 {
+        gpu_resource_pool_remove(&m_descriptor_pool[.CBV_SRV_UAV].m_pool, buffer.m_descriptor)
+    }
 }
 
 gpu_create_texture :: proc(using in_device : ^GPUDevice, in_desc : GPUTextureDesc) -> GPUTextureID

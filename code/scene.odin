@@ -7,8 +7,9 @@ import "core:encoding/json"
 
 Entity :: bit_field u32
 {
+    valid : u32 | 1,
     index : u32 | 20,
-    generation : u32 | 12
+    generation : u32 | 11
 }
 
 Name :: struct
@@ -21,6 +22,8 @@ Transform :: struct
     scale : [3]f32,
     position : [3]f32,
     rotation : [4]f32,
+    local_transform : matrix[4,4]f32,
+    world_transform : matrix[4,4]f32
 }
 
 Mesh :: struct
@@ -37,6 +40,48 @@ Mesh :: struct
     vertices  : [dynamic]f32
 }
 
+Material :: struct
+{
+    albedo : [4]f32,
+    emissive : [4]f32,
+    metallic : f32,
+    roughness : f32,
+    alpha : AlphaMode,
+    textures : [MaterialTextureKind]MaterialTexture
+}
+
+DefaultMaterial := Material {
+    albedo = {1.0, 1.0, 1.0, 1.0},
+    emissive = {0.0, 0.0, 0.0, 0.0},
+    metallic = 0.0,
+    roughness = 1.0,
+    alpha = .NONE,
+    textures = {}
+}
+
+AlphaMode :: enum
+{
+    NONE,
+    MASKED,
+    BLEND
+}
+
+MaterialTexture :: struct
+{
+    swizzle : u8,
+    gpu_handle : u32,
+    file_path : string
+}
+
+MaterialTextureKind :: enum
+{
+    ALBEDO, 
+    NORMALS, 
+    EMISSIVE, 
+    METALLIC, 
+    ROUGHNESS
+}
+
 ComponentArray :: struct($T : typeid)
 {
     sparse : [dynamic]u32,
@@ -47,24 +92,28 @@ ComponentArray :: struct($T : typeid)
 ComponentEnum :: enum {
     NAME,
     MESH,
+    MATERIAL,
     TRANSFORM
 }
 
 ComponentEnumMap := map[typeid]ComponentEnum {
     typeid_of(Name) = .NAME,
     typeid_of(Mesh) = .MESH,
+    typeid_of(Material) = .MATERIAL,
     typeid_of(Transform) = .TRANSFORM
 }
 
 ComponentMapEnum := [ComponentEnum]typeid {
     .NAME = typeid_of(Name),
     .MESH = typeid_of(Mesh),
+    .MATERIAL = typeid_of(Material),
     .TRANSFORM = typeid_of(Transform)
 }
 
 AnyComponentArray :: union {
     ComponentArray(Name),
     ComponentArray(Mesh),
+    ComponentArray(Material),
     ComponentArray(Transform)
 }
 
@@ -83,6 +132,10 @@ RayTracedScene :: struct
     materials_buffer : GPUBufferID,
     instances_buffer : GPUBufferID,
     d3d12_instances_buffer : GPUBufferID
+}
+
+is_entity_valid :: proc(entity : Entity) -> bool {
+    return entity.valid == 1
 }
 
 scene_destroy :: proc(scene : ^Scene)
@@ -117,13 +170,15 @@ scene_open_from_json :: proc(scene : ^Scene, file : string)
 scene_create_entity :: proc(scene : ^Scene) -> Entity
 {
     entity := scene.entity
+    entity.valid = 1
     scene.entity.index += 1
+
     return entity
 }
 
 scene_has_entity :: proc(scene : ^Scene, entity : Entity) -> bool
 {
-    return u32(entity) < u32(scene.entity)
+    return entity.valid == 1 && entity.index < scene.entity.index
 }
 
 scene_has_component :: proc(scene : ^Scene, entity : Entity, $T : typeid) -> bool
@@ -174,7 +229,7 @@ component_array_get :: proc(array : ^ComponentArray($T), entity : Entity) -> ^T
 
 component_array_contains :: proc(array : ^ComponentArray($T), entity : Entity) -> bool
 {
-    if u32(entity) >= u32(len(array.sparse)) {
+    if entity.index >= u32(len(array.sparse)) {
         return false
     }
     if array.sparse[entity.index] >= u32(len(array.entities)) {
@@ -194,7 +249,7 @@ component_array_insert :: proc(array : ^ComponentArray($T), entity : Entity, com
 
     append(&array.entities, entity)
 
-    if u32(len(array.sparse)) <= u32(entity) {
+    if u32(len(array.sparse)) <= entity.index {
         resize(&array.sparse, int(entity.index + 1))
     }
 
