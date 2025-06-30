@@ -1,9 +1,11 @@
+#+feature dynamic-literals
 package main
 
 import "core:os"
 import "base:runtime"
 import "core:strings"
 import "core:encoding/json"
+
 
 Entity :: bit_field u32
 {
